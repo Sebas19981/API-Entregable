@@ -1,5 +1,5 @@
 import * as http from "http";
-import type { QueryResultRow } from "pg";
+import type { ResultSetHeader, RowDataPacket } from "mysql2";
 import { grupoDeConexiones } from "../configuracion/baseDeDatos.js";
 import { enviarRespuestaJson } from "../utilidades/respuestas.js";
 import { leerCuerpoDePeticion } from "../utilidades/lecturaCuerpo.js";
@@ -14,19 +14,7 @@ interface DatosKdrama {
     episodios: number;
     calificacion: number;
 }
-interface FilaKdrama extends QueryResultRow {
-    id: number;
-    titulo: string;
-    genero: string;
-    protagonista: string;
-    anio: number;
-    episodios: number;
-    calificacion: number;
-}
-
-function normalizarFila(fila: FilaKdrama): FilaKdrama {
-    return { ...fila, calificacion: Number(fila.calificacion) };
-}
+type FilaKdrama = RowDataPacket & { id: number } & DatosKdrama;
 
 function validarDatos(datos: unknown, completos: boolean): datos is Partial<DatosKdrama> {
     if (datos === null || typeof datos !== "object" || Array.isArray(datos)) {
@@ -78,11 +66,11 @@ async function leerJson(peticion: http.IncomingMessage): Promise<unknown> {
 }
 
 async function obtenerPorId(id: number): Promise<FilaKdrama | undefined> {
-    const resultado = await grupoDeConexiones.query<FilaKdrama>(
-        "SELECT id, titulo, genero, protagonista, anio, episodios, calificacion FROM kdramas WHERE id = $1",
+    const [filas] = await grupoDeConexiones.execute<FilaKdrama[]>(
+        "SELECT id, titulo, genero, protagonista, anio, episodios, calificacion FROM kdramas WHERE id = ?",
         [id]
     );
-    return resultado.rows[0] ? normalizarFila(resultado.rows[0]) : undefined;
+    return filas[0];
 }
 
 function responderIdInvalido(respuesta: http.ServerResponse): void {
@@ -113,10 +101,10 @@ export async function manejarKdramas(
     }
 
     if (rutaColeccion && metodo === "GET") {
-        const resultado = await grupoDeConexiones.query<FilaKdrama>(
+        const [filas] = await grupoDeConexiones.execute<FilaKdrama[]>(
             "SELECT id, titulo, genero, protagonista, anio, episodios, calificacion FROM kdramas ORDER BY id"
         );
-        enviarRespuestaJson(respuesta, 200, resultado.rows.map(normalizarFila));
+        enviarRespuestaJson(respuesta, 200, filas);
         return;
     }
 
@@ -147,11 +135,11 @@ export async function manejarKdramas(
             datos.episodios,
             datos.calificacion ?? 0
         ];
-        const resultado = await grupoDeConexiones.query<{ id: number }>(
-            "INSERT INTO kdramas (titulo, genero, protagonista, anio, episodios, calificacion) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id",
+        const [resultado] = await grupoDeConexiones.execute<ResultSetHeader>(
+            "INSERT INTO kdramas (titulo, genero, protagonista, anio, episodios, calificacion) VALUES (?, ?, ?, ?, ?, ?)",
             valores
         );
-        enviarRespuestaJson(respuesta, 201, await obtenerPorId(resultado.rows[0].id));
+        enviarRespuestaJson(respuesta, 201, await obtenerPorId(resultado.insertId));
         return;
     }
 
@@ -198,13 +186,11 @@ export async function manejarKdramas(
                     valores.push(datos[campo]);
                 }
             }
-            const asignaciones = camposActualizados
-                .map((campo, indice) => `${campo} = $${indice + 1}`)
-                .join(", ");
+            const asignaciones = camposActualizados.map((campo) => `${campo} = ?`).join(", ");
             valores.push(id);
 
-            await grupoDeConexiones.query(
-                `UPDATE kdramas SET ${asignaciones} WHERE id = $${valores.length}`,
+            await grupoDeConexiones.execute(
+                `UPDATE kdramas SET ${asignaciones} WHERE id = ?`,
                 valores
             );
             const kdramaActualizado = await obtenerPorId(id);
@@ -217,11 +203,11 @@ export async function manejarKdramas(
         }
 
         if (metodo === "DELETE") {
-            const resultado = await grupoDeConexiones.query(
-                "DELETE FROM kdramas WHERE id = $1",
+            const [resultado] = await grupoDeConexiones.execute<ResultSetHeader>(
+                "DELETE FROM kdramas WHERE id = ?",
                 [id]
             );
-            if (resultado.rowCount === 0) {
+            if (resultado.affectedRows === 0) {
                 enviarRespuestaJson(respuesta, 404, { mensaje: "K-drama no encontrado" });
             } else {
                 enviarRespuestaJson(respuesta, 200, { mensaje: "K-drama eliminado" });

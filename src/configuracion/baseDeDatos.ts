@@ -1,10 +1,22 @@
-import { Pool } from "pg";
+import mysql from "mysql2/promise";
 
-export const grupoDeConexiones = new Pool({
-    host: process.env.PGHOST || "postgresql://sebas:M5kXLI5I1t415QmjCuvcXmdDMRZdP4xu@dpg-dbnt3mjl550s7384lbtg-a/k_drama_9iag",
-    user: process.env.PGUSER || "sebas",
-    password: process.env.PGPASSWORD || "M5kXLI5I1t415QmjCuvcXmdDMRZdP4xu",
-    database: process.env.PGDATABASE || "k_drama_9iag",
-    port: Number(process.env.PGPORT || 5432)
-});
+function requerida(nombre: string): string {
+    const valor = process.env[nombre];
+    if (!valor) {
+        throw new Error(`Falta la variable de entorno ${nombre}`);
+    }
+    return valor;
+}
 
+const configuracionBaseDeDatos = {
+    host: requerida("DB_HOST"),
+    port: Number(process.env.DB_PORT || 3306),
+    user: requerida("DB_USER"),
+    password: requerida("DB_PASSWORD"),
+    database: requerida("DB_NAME"),
+    waitForConnections: true,
+    connectionLimit: 5,
+    connectTimeout: 15000
+};
+
+export const grupoDeConexiones = mysql.createPool(configuracionBaseDeDatos);

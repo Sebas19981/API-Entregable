@@ -2,9 +2,6 @@ import { grupoDeConexiones } from "../configuracion/baseDeDatos.js";
 import { enviarRespuestaJson } from "../utilidades/respuestas.js";
 import { leerCuerpoDePeticion } from "../utilidades/lecturaCuerpo.js";
 const campos = ["titulo", "genero", "protagonista", "anio", "episodios", "calificacion"];
-function normalizarFila(fila) {
-    return { ...fila, calificacion: Number(fila.calificacion) };
-}
 function validarDatos(datos, completos) {
     if (datos === null || typeof datos !== "object" || Array.isArray(datos)) {
         return false;
@@ -50,8 +47,8 @@ async function leerJson(peticion) {
     return JSON.parse(cuerpo);
 }
 async function obtenerPorId(id) {
-    const resultado = await grupoDeConexiones.query("SELECT id, titulo, genero, protagonista, anio, episodios, calificacion FROM kdramas WHERE id = $1", [id]);
-    return resultado.rows[0] ? normalizarFila(resultado.rows[0]) : undefined;
+    const [filas] = await grupoDeConexiones.execute("SELECT id, titulo, genero, protagonista, anio, episodios, calificacion FROM kdramas WHERE id = ?", [id]);
+    return filas[0];
 }
 function responderIdInvalido(respuesta) {
     enviarRespuestaJson(respuesta, 400, { mensaje: "El id debe ser un numero entero positivo" });
@@ -72,8 +69,8 @@ export async function manejarKdramas(ruta, metodo, peticion, respuesta) {
         return;
     }
     if (rutaColeccion && metodo === "GET") {
-        const resultado = await grupoDeConexiones.query("SELECT id, titulo, genero, protagonista, anio, episodios, calificacion FROM kdramas ORDER BY id");
-        enviarRespuestaJson(respuesta, 200, resultado.rows.map(normalizarFila));
+        const [filas] = await grupoDeConexiones.execute("SELECT id, titulo, genero, protagonista, anio, episodios, calificacion FROM kdramas ORDER BY id");
+        enviarRespuestaJson(respuesta, 200, filas);
         return;
     }
     if (rutaColeccion && metodo === "POST") {
@@ -102,8 +99,8 @@ export async function manejarKdramas(ruta, metodo, peticion, respuesta) {
             datos.episodios,
             datos.calificacion ?? 0
         ];
-        const resultado = await grupoDeConexiones.query("INSERT INTO kdramas (titulo, genero, protagonista, anio, episodios, calificacion) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id", valores);
-        enviarRespuestaJson(respuesta, 201, await obtenerPorId(resultado.rows[0].id));
+        const [resultado] = await grupoDeConexiones.execute("INSERT INTO kdramas (titulo, genero, protagonista, anio, episodios, calificacion) VALUES (?, ?, ?, ?, ?, ?)", valores);
+        enviarRespuestaJson(respuesta, 201, await obtenerPorId(resultado.insertId));
         return;
     }
     if (rutaItem) {
@@ -147,11 +144,9 @@ export async function manejarKdramas(ruta, metodo, peticion, respuesta) {
                     valores.push(datos[campo]);
                 }
             }
-            const asignaciones = camposActualizados
-                .map((campo, indice) => `${campo} = $${indice + 1}`)
-                .join(", ");
+            const asignaciones = camposActualizados.map((campo) => `${campo} = ?`).join(", ");
             valores.push(id);
-            await grupoDeConexiones.query(`UPDATE kdramas SET ${asignaciones} WHERE id = $${valores.length}`, valores);
+            await grupoDeConexiones.execute(`UPDATE kdramas SET ${asignaciones} WHERE id = ?`, valores);
             const kdramaActualizado = await obtenerPorId(id);
             if (!kdramaActualizado) {
                 enviarRespuestaJson(respuesta, 404, { mensaje: "K-drama no encontrado" });
@@ -162,8 +157,8 @@ export async function manejarKdramas(ruta, metodo, peticion, respuesta) {
             return;
         }
         if (metodo === "DELETE") {
-            const resultado = await grupoDeConexiones.query("DELETE FROM kdramas WHERE id = $1", [id]);
-            if (resultado.rowCount === 0) {
+            const [resultado] = await grupoDeConexiones.execute("DELETE FROM kdramas WHERE id = ?", [id]);
+            if (resultado.affectedRows === 0) {
                 enviarRespuestaJson(respuesta, 404, { mensaje: "K-drama no encontrado" });
             }
             else {
