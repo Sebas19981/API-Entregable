@@ -2,10 +2,11 @@ FROM node:22-alpine AS build
 
 WORKDIR /app
 
-COPY node_modules ./node_modules
+COPY package.json package-lock.json ./
+RUN npm ci --no-audit --no-fund
 COPY tsconfig.json ./
 COPY src ./src
-RUN node ./node_modules/typescript/bin/tsc
+RUN npm run build && npm prune --omit=dev
 
 FROM node:22-alpine AS production
 
