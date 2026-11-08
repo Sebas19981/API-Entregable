@@ -1,0 +1,16 @@
+{
+  "name": "api-kdramas",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "tsc && node dist/servidor.js",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "mysql2": "^3.9.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.5.0"
+  }
+}

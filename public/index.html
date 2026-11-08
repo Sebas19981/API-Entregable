@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#14263f">
+  <title>Seoul Studio | API de K-dramas</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <div class="contenedor-aplicacion">
+    <aside class="barra-lateral">
+      <a class="marca" href="/" aria-label="Seoul Studio inicio">
+        <span class="marca-icono">S</span>
+        <span><strong>SEOUL STUDIO</strong><small>API CONSOLE</small></span>
+      </a>
+      <div class="etiqueta-lateral">ESPACIO DE TRABAJO</div>
+      <a class="enlace-lateral activo" href="#coleccion"><span class="icono-lateral">▦</span> Colección</a>
+      <a class="enlace-lateral" href="#operaciones"><span class="icono-lateral">⌘</span> Operaciones API</a>
+      <div class="pie-lateral">
+        <span class="punto-conexion"></span>
+        <span><strong>API local</strong><small>localhost:3000</small></span>
+        <span id="connection-state" class="estado-conexion">Conectando</span>
+      </div>
+    </aside>
+
+    <main class="contenido-principal">
+      <header class="barra-superior">
+        <div class="migas-pan">PROYECTO <span>/</span> <strong>K-DRAMAS</strong></div>
+        <button id="open-docs" class="enlace-documentacion" type="button">Guía de Postman <span>↗</span></button>
+      </header>
+
+      <section class="presentacion">
+        <div>
+          <div class="sobrelinea"><span class="linea-sobrelinea"></span> API REST · PROYECTO ACADÉMICO</div>
+          <h1>Tu colección,<br><em>en escena.</em></h1>
+          <p>Administra los K-dramas y prueba cada endpoint desde un solo lugar.</p>
+        </div>
+      </section>
+
+      <section class="cuadricula-estadisticas" aria-label="Resumen de la colección">
+        <article class="tarjeta-estadistica">
+          <span class="etiqueta-estadistica">TÍTULOS EN COLECCIÓN</span>
+          <div class="valor-estadistica"><strong id="total-count">—</strong><span class="icono-estadistica">▤</span></div>
+          <span class="nota-estadistica">Registros disponibles</span>
+        </article>
+        <article class="tarjeta-estadistica">
+          <span class="etiqueta-estadistica">ENDPOINTS DISPONIBLES</span>
+          <div class="valor-estadistica"><strong>06</strong><span class="icono-estadistica rosa">⌘</span></div>
+          <span class="nota-estadistica">Operaciones REST listas</span>
+        </article>
+        <article class="tarjeta-estadistica">
+          <span class="etiqueta-estadistica">ESTADO DEL SERVICIO</span>
+          <div class="valor-estadistica"><strong id="service-status">—</strong><span class="pulso-estado"></span></div>
+          <span id="service-note" class="nota-estadistica">Comprobando conexión...</span>
+        </article>
+      </section>
+
+      <section class="seccion-operaciones" id="operaciones">
+        <div class="encabezado-seccion">
+          <div><span class="rotulo-seccion">PRUEBA LA API</span><h2>Centro de operaciones</h2></div>
+          <span class="url-base"><span class="punto-mini"></span> http://localhost:3000</span>
+        </div>
+        <div class="barra-metodos" role="group" aria-label="Métodos HTTP">
+          <button class="boton-metodo metodo-get" data-method="GET"><span>GET</span><small>Consultar</small></button>
+          <button class="boton-metodo metodo-post" data-method="POST"><span>POST</span><small>Crear</small></button>
+          <button class="boton-metodo metodo-put" data-method="PUT"><span>PUT</span><small>Reemplazar</small></button>
+          <button class="boton-metodo metodo-patch" data-method="PATCH"><span>PATCH</span><small>Actualizar</small></button>
+          <button class="boton-metodo metodo-delete" data-method="DELETE"><span>DELETE</span><small>Eliminar</small></button>
+        </div>
+      </section>
+
+      <section class="seccion-coleccion" id="coleccion">
+        <div class="encabezado-seccion encabezado-coleccion">
+          <div><span class="rotulo-seccion">BIBLIOTECA</span><h2>K-dramas</h2></div>
+          <button id="refresh-button" class="boton-secundario" type="button"><span>↻</span> Actualizar lista</button>
+        </div>
+        <div class="contenedor-tabla">
+          <table>
+            <thead><tr><th>TÍTULO</th><th>GÉNERO</th><th>PROTAGONISTA</th><th>AÑO</th><th>EPISODIOS</th><th>NOTA</th><th></th></tr></thead>
+            <tbody id="drama-list"><tr><td class="estado-vacio" colspan="7">Cargando colección...</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="seccion-respuesta" aria-live="polite">
+        <div class="encabezado-respuesta">
+          <div><span class="rotulo-seccion">ÚLTIMA SOLICITUD</span><h2>Respuesta del servidor</h2></div>
+          <span id="response-status" class="insignia-respuesta">SIN SOLICITUD</span>
+        </div>
+        <div class="metadatos-respuesta"><span id="response-request">Ejecuta una operación para ver el resultado</span><span id="response-time"></span></div>
+        <pre id="response-body"><code>// La respuesta JSON aparecerá aquí</code></pre>
+      </section>
+
+      <footer>Hecho para explorar la API de K-dramas <span>·</span> También disponible en Postman</footer>
+    </main>
+  </div>
+
+  <dialog id="request-dialog" class="ventana-solicitud" aria-labelledby="dialog-title">
+    <form id="request-form">
+      <div class="parte-superior-dialogo">
+        <div><span id="dialog-method" class="metodo-dialogo">GET</span><span class="ruta-dialogo">API REST</span></div>
+        <button id="close-dialog" class="boton-cerrar" type="button" aria-label="Cerrar">×</button>
+      </div>
+      <span class="rotulo-seccion">NUEVA SOLICITUD</span>
+      <h2 id="dialog-title">Consultar colección</h2>
+      <p id="dialog-description" class="descripcion-dialogo">Envía una solicitud a la API y revisa la respuesta.</p>
+      <label class="etiqueta-solicitud" for="request-url">URL de la solicitud</label>
+      <div class="barra-solicitud">
+        <span class="base-solicitud">http://localhost:3000</span>
+        <input id="request-url" class="entrada-url" type="text" value="/kdramas" autocomplete="off" spellcheck="false" required>
+      </div>
+      <section id="request-body-panel" class="editor-cuerpo" hidden>
+        <div class="editor-encabezado">
+          <label for="request-body">Cuerpo <span>JSON</span></label>
+          <span>application/json</span>
+        </div>
+        <textarea id="request-body" class="editor-json" spellcheck="false" aria-label="Cuerpo JSON de la solicitud"></textarea>
+        <p id="request-help" class="ayuda-editor">Completa los valores entre comillas. Los campos numéricos se convertirán automáticamente.</p>
+      </section>
+      <p id="request-error" class="error-solicitud" role="alert" hidden></p>
+      <div class="acciones-dialogo">
+        <button id="cancel-dialog" class="boton-secundario" type="button">Cancelar</button>
+        <button id="send-request" class="boton-enviar" type="submit">Enviar solicitud <span>→</span></button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="docs-dialog" class="ventana-documentacion" aria-labelledby="docs-title">
+    <div class="encabezado-documentacion">
+      <div>
+        <span class="rotulo-seccion">DOCUMENTACIÓN DE LA API</span>
+        <h2 id="docs-title">Guía de Postman</h2>
+      </div>
+      <button id="close-docs" class="boton-cerrar" type="button" aria-label="Cerrar guía">×</button>
+    </div>
+    <article id="docs-content" class="contenido-documentacion" aria-live="polite">
+      <p>Cargando guía...</p>
+    </article>
+  </dialog>
+</body>
+</html>
